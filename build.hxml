@@ -1,4 +1,7 @@
+-lib buddy
 -cp src
+-cp tests
 -D analyzer-optimize
--main Main
 --interp
+-main Tests
+-dce full
