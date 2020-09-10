@@ -1,0 +1,14 @@
+{
+  "name": "uniontypes",
+  "license": "MIT",
+  "tags": [
+    "union"
+  ],
+  "classPath": "src",
+  "contributors": [
+    "ciscoheat"
+  ],
+  "releasenote": "initial release",
+  "version": "0.0.0",
+  "dependencies": {}
+}
