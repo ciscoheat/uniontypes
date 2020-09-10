@@ -4,7 +4,8 @@ enum UnionClassType {
 	Integer(i : Int);
 	Date(d : Date);
 	Boolean(b : Bool);
-	Floating(f : Float);
+    Floating(f : Float);
+    //Unknown(d : Dynamic);
 }
 
 abstract UnionClass(Dynamic) from String from Int from Date from Bool from Float {
@@ -19,7 +20,9 @@ abstract UnionClass(Dynamic) from String from Int from Date from Bool from Float
 			Boolean(cast this)
 		else if(Std.isOfType(this, Int))
 			Integer(cast this) // Must be before Floating!
-		else
-			Floating(cast this);
+		else //if(Std.isOfType(this, Float))
+            Floating(cast this);
+        //else
+        //    Unknown(this);
 	}
 }
