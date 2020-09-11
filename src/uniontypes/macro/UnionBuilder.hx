@@ -32,21 +32,27 @@ class UnionBuilder {
         case t: Context.error('Unsupported Union name type: $t', Context.currentPos());
     }
 
-    static public function build(checkNull = true, checkUnknownType = false) {
-        final checkNull = checkNull;
-        final checkUnknownType = checkUnknownType;
-
+    static public function build(trusted : Null<Bool> = null) {
+        final localClass = Context.getLocalClass().get();
         final curPos = Context.currentPos();
-        final localType = Context.getLocalClass().get();
+
+        final checkNull = if(trusted == null) true else !trusted;
+        final checkUnknownType = if(trusted == null) false else !trusted;
 
         final unionTypes = switch Context.getLocalType() {
-            case TInst(t, params): params;
+            case TInst(_, params): params;
             case _: Context.error("Class expected", curPos);
         }
 
-        final unionName = unionTypes.map(typeName).join('Or');
+        final unionName = (if(trusted == null) '' else (trusted ? 'Trusted' : 'Untrusted')) + 
+            unionTypes.map(typeName).join('Or');
 
-        final unionUniqueName = toDotPath({pack: [], module: Context.getLocalModule()}, unionName);
+        final unionUniqueName = toDotPath(
+            {pack: [], module: Context.getLocalModule()}, 
+            unionName
+        );
+
+        // Check cache
         if(createdUnions.exists(unionUniqueName)) {
             return createdUnions[unionUniqueName];
         }
@@ -93,7 +99,7 @@ class UnionBuilder {
 
                 {
                     pos: curPos,
-                    pack: localType.pack,
+                    pack: localClass.pack,
                     name: unionEnumName,
                     kind: TDEnum,
                     fields: [for(t in unionTypes) {
@@ -157,11 +163,15 @@ class UnionBuilder {
                     enumValue;
             }
 
-            final ifExpr = EIf(
-                macro this == null, 
-                macro $p{[unionEnumName, "Null"]},
-                {expr: ifExpr(unionTypes.iterator()), pos: curPos}
-            );
+            // Check for null unless trusted
+            final ifExpr = if(checkNull)
+                EIf(
+                    macro this == null, 
+                    macro $p{[unionEnumName, "Null"]},
+                    {expr: ifExpr(unionTypes.iterator()), pos: curPos}
+                )
+            else
+                ifExpr(unionTypes.iterator());
 
             final typeField = {
                 pos: curPos,
@@ -170,7 +180,7 @@ class UnionBuilder {
                 doc: null,
                 access: [APublic],
                 kind: FFun({
-                    ret: TPath({pack: localType.pack, name: unionEnumName}),
+                    ret: TPath({pack: localClass.pack, name: unionEnumName}),
                     params: null,
                     expr: macro return ${{expr: ifExpr, pos: curPos}},
                     args: []
@@ -182,7 +192,7 @@ class UnionBuilder {
             {
                 pos: curPos,
                 params: null,
-                pack: localType.pack,
+                pack: localClass.pack,
                 name: unionName,
                 meta: null,
                 kind: TypeDefKind.TDAbstract(macro : Dynamic, unionTypes.map(Context.toComplexType), []),

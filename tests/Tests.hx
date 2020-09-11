@@ -37,25 +37,19 @@ class Tests extends buddy.SingleSuite {
 
         final x : UnionClass = 123.45;
         x.type().should.equal(UnionClassType.Float(123.45));
-
-        /*
-        final p = {test: 123};
-        final x : UnionClass = cast p;
-        x.type().should.equal(UnionClassType.Unknown(p));
-        */
       });
 
       it("should work with the macro builder", {
-        final x : Union.Union3<String, Float, Int> = null;
+        final x : Union3<String, Float, Int> = null;
         x.type().should.equal(StringOrFloatOrIntType.Null);
 
-        final x : Union.Union3<String, Float, Int> = "string";
+        final x : Union3<String, Float, Int> = "string";
         x.type().should.equal(StringOrFloatOrIntType.String("string"));
 
-        final x : Union.Union3<String, Float, Int> = 123;
+        final x : Union3<String, Float, Int> = 123;
         x.type().should.equal(StringOrFloatOrIntType.Int(123));
 
-        final x : Union.Union3<String, Float, Int> = 123.45;
+        final x : Union3<String, Float, Int> = 123.45;
         x.type().should.equal(StringOrFloatOrIntType.Float(123.45));
       });
 
@@ -68,16 +62,16 @@ class Tests extends buddy.SingleSuite {
             case Float(f): f == 123.45;
           }
   
-        final x : Union.Union3<String, Float, Int> = "test";
+        final x : Union3<String, Float, Int> = "test";
         testUnion(x).should.be(true);
 
-        final x : Union.Union3<String, Float, Int> = 123;
+        final x : Union3<String, Float, Int> = 123;
         testUnion(x).should.be(true);
 
-        final x : Union.Union3<String, Float, Int> = 123.45;
+        final x : Union3<String, Float, Int> = 123.45;
         testUnion(x).should.be(true);
 
-        final x : Union.Union3<String, Float, Int> = null;
+        final x : Union3<String, Float, Int> = null;
         testUnion(x).should.be(false);
       });
 
@@ -119,6 +113,34 @@ class Tests extends buddy.SingleSuite {
       it("should support Enums", {
         final x : Union<Float, Color> = Green;
         x.type().should.equal(FloatOrColorType.Color(Green));
+      });
+
+      it("should have Trusted and Untrusted Unions in each module.", {
+        // Also checks for name clashes
+        final x : Union.Union<Int, String> = "neutral";
+        switch x.type() {
+          case Null: fail('x was null');
+          case Int(i): fail('x was Int $i');
+          case String(s): s.should.be("neutral");
+        }        
+
+        final x : Union.TrustedUnion<Int, String> = "trusted";
+        switch x.type() {
+          case Int(i): fail('x was Int $i');
+          case String(s): s.should.be("trusted");
+        }        
+
+        final x : Union.UntrustedUnion<Int, String> = "untrusted";
+        switch x.type() {
+          case Null: fail('x was null');
+          case Int(i): fail('x was Int $i');
+          case String(s): s.should.be("untrusted");
+          case Unknown(u): fail('x was unknown: $u');
+        }
+
+        final unknown = {test: 123};
+        final x : Union.UntrustedUnion<Int, String> = cast unknown;
+        x.type().should.equal(UntrustedIntOrStringType.Unknown(unknown));
       });
     });
   }

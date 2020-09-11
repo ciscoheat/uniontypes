@@ -1,8 +1,8 @@
 @:genericBuild(uniontypes.macro.UnionBuilder.build())
-class Union<T, T2> {}
+class Union4<T, T2, T3, T4> {}
 
 @:genericBuild(uniontypes.macro.UnionBuilder.build(true))
-class TrustedUnion<T, T2> {}
+class TrustedUnion4<T, T2, T3, T4> {}
 
 @:genericBuild(uniontypes.macro.UnionBuilder.build(false))
-class UntrustedUnion<T, T2> {}
+class UntrustedUnion4<T, T2, T3, T4> {}
