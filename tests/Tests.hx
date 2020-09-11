@@ -7,6 +7,8 @@ class SomeClass {
   public function new(s) this.s = s;
 }
 
+typedef Name = String;
+
 class Tests extends buddy.SingleSuite {
   public function new() {
     describe("Uniontypes", {
@@ -101,6 +103,11 @@ class Tests extends buddy.SingleSuite {
 
       it("should work with packages", {
         subpack.SubTest.test().should.be(true);
+      });
+
+      it("should support Typedefs", {
+        final x : Union<Float, Name> = "A name";
+        x.type().should.equal(FloatOrNameType.Name("A name"));
       });
     });
   }

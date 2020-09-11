@@ -24,6 +24,13 @@ class UnionBuilder {
         );
     }
 
+    static function typeName(t : Type) return switch t {
+        case TInst(t, _): t.get().name;
+        case TAbstract(t, _): t.get().name;
+        case TType(t, _): t.get().name;
+        case t: Context.error('Unsupported Union type: $t', Context.currentPos());
+    }
+
     static public function build(checkNull = true, checkUnknownType = false) {
         final checkNull = checkNull;
         final checkUnknownType = checkUnknownType;
@@ -36,12 +43,7 @@ class UnionBuilder {
             case _: Context.error("Class expected", curPos);
         }
 
-        final unionName = [for(t in unionTypes) switch t {
-            case TInst(t, _): t.get().name;
-            case TAbstract(t, _): 
-                t.get().name;
-            case t: Context.error('Unsupported Union name type: $t', curPos);
-        }].join('Or');
+        final unionName = unionTypes.map(typeName).join('Or');
 
         final unionUniqueName = toDotPath({pack: [], module: Context.getLocalModule()}, unionName);
         if(createdUnions.exists(unionUniqueName)) {
@@ -94,15 +96,7 @@ class UnionBuilder {
                     name: unionEnumName,
                     kind: TDEnum,
                     fields: [for(t in unionTypes) {
-                        final name = switch t {
-                            case TInst(t, _):
-                                t.get().name;
-                            case TAbstract(t, _): 
-                                t.get().name;
-                            case _:
-                                Context.error('Unsupported Union enum type: $t', curPos);
-                        }
-
+                        final name = typeName(t);
                         {
                             pos: curPos,
                             name: name,
@@ -131,15 +125,7 @@ class UnionBuilder {
         final unionType = {
             function ifExpr(it) {
                 final t : Type = it.next();
-                final enumValue = switch t {
-                    case TInst(t, _):
-                        t.get().name;
-                    case TAbstract(t, _): 
-                        t.get().name;
-                    case _:
-                        Context.error('Unsupported Union enum type: $t', curPos);
-                }
-                final enumValue = ECall(macro $p{[unionEnumName, enumValue]}, [macro cast this]);
+                final enumValue = ECall(macro $p{[unionEnumName, typeName(t)]}, [macro cast this]);
 
                 final typeToCheck = (switch t {
                     case TInst(t, _):
@@ -148,6 +134,9 @@ class UnionBuilder {
                     case TAbstract(t, _): 
                         final inst = t.get();
                         toDotPath(inst, inst.name);    
+                    case TType(t, _): 
+                        final inst = t.get();
+                        toDotPath(inst, inst.name);        
                     case _:
                         Context.error('Unsupported Union type: $t', curPos);
                 }).split('.');
