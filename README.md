@@ -22,7 +22,7 @@ The `Union` type is for two types, but the library also includes `Union3`, `Unio
 
 ## To trust, or not to trust
 
-Depending on how much you trust the library, you can specify different unions:
+Depending on how much you trust the data in the union, you can specify different types of unions:
 
 - `Union.TrustedUnion` assumes a value will never be `null`, meaning no `Null` enum constructor will exist.
 - `Union.UntrustedUnion` includes both a `Null` and an `Unknown(u : Dynamic)` enum constructor.
