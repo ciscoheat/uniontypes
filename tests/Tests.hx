@@ -2,6 +2,11 @@ using buddy.Should;
 
 import UnionClass.UnionClassType;
 
+class SomeClass {
+  public final s : String;
+  public function new(s) this.s = s;
+}
+
 class Tests extends buddy.SingleSuite {
   public function new() {
     describe("Uniontypes", {
@@ -33,19 +38,69 @@ class Tests extends buddy.SingleSuite {
       });
 
       it("should work with the macro builder", {
+        final x : Union.Union3<String, Float, Int> = null;
+        x.type().should.equal(StringOrFloatOrIntType.Null);
+
+        final x : Union.Union3<String, Float, Int> = "string";
+        x.type().should.equal(StringOrFloatOrIntType.String("string"));
+
+        final x : Union.Union3<String, Float, Int> = 123;
+        x.type().should.equal(StringOrFloatOrIntType.Integer(123));
+
+        final x : Union.Union3<String, Float, Int> = 123.45;
+        x.type().should.equal(StringOrFloatOrIntType.Floating(123.45));
+      });
+
+      it("should work with switch statements", {
+        function testUnion(inp : StringOrFloatOrInt)
+          return switch inp.type() {
+            case Null: false;
+            case String(s): s == "test";
+            case Integer(i): i == 123;
+            case Floating(f): f == 123.45;
+          }
+  
         final x : Union.Union3<String, Float, Int> = "test";
-        /*
-        x.type().should.equal(Null);
+        testUnion(x).should.be(true);
 
-        final x : Union<String, Int> = "string";
-        x.type().should.equal(String("string"));
+        final x : Union.Union3<String, Float, Int> = 123;
+        testUnion(x).should.be(true);
 
-        final x : Union<String, Int> = 123;
-        x.type().should.equal(Integer(123));
+        final x : Union.Union3<String, Float, Int> = 123.45;
+        testUnion(x).should.be(true);
 
-        final x : Union<String, Int> = 123.45;
-        x.type().should.equal(Floating(123.45));
-        */
+        final x : Union.Union3<String, Float, Int> = null;
+        testUnion(x).should.be(false);
+      });
+
+      it("should work with classes", {
+        final x : Union<SomeClass, Bool> = new SomeClass("A class");
+        
+        switch x.type() {
+          case Null: fail("x was null");
+          case Boolean(b): fail('x was bool $b');
+          case SomeClass(s): s.s.should.be("A class");
+        }
+
+        final x : Union<SomeClass, Bool> = true;
+        
+        switch x.type() {
+          case Null: fail("x was null");
+          case Boolean(b): b.should.be(true);
+          case SomeClass(s): fail('x was SomeClass $s');
+        }
+
+        final x : Union<SomeClass, Bool> = null;
+        
+        switch x.type() {
+          case Null: x.should.be(null);
+          case Boolean(b): fail('x was bool $b');
+          case SomeClass(s): fail('x was SomeClass $s');
+        }
+      });
+
+      it("should work with packages", {
+        subpack.SubTest.test().should.be(true);
       });
     });
   }
