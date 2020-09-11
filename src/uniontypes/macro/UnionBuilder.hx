@@ -28,7 +28,8 @@ class UnionBuilder {
         case TInst(t, _): t.get().name;
         case TAbstract(t, _): t.get().name;
         case TType(t, _): t.get().name;
-        case t: Context.error('Unsupported Union type: $t', Context.currentPos());
+        case TEnum(t, _): t.get().name;
+        case t: Context.error('Unsupported Union name type: $t', Context.currentPos());
     }
 
     static public function build(checkNull = true, checkUnknownType = false) {
@@ -136,7 +137,10 @@ class UnionBuilder {
                         toDotPath(inst, inst.name);    
                     case TType(t, _): 
                         final inst = t.get();
-                        toDotPath(inst, inst.name);        
+                        toDotPath(inst, inst.name);
+                    case TEnum(t, _): 
+                        final inst = t.get();
+                        toDotPath(inst, inst.name);            
                     case _:
                         Context.error('Unsupported Union type: $t', curPos);
                 }).split('.');

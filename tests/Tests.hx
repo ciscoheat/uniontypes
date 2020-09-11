@@ -9,6 +9,12 @@ class SomeClass {
 
 typedef Name = String;
 
+enum Color {
+  Red;
+  Blue;
+  Green;
+}
+
 class Tests extends buddy.SingleSuite {
   public function new() {
     describe("Uniontypes", {
@@ -108,6 +114,11 @@ class Tests extends buddy.SingleSuite {
       it("should support Typedefs", {
         final x : Union<Float, Name> = "A name";
         x.type().should.equal(FloatOrNameType.Name("A name"));
+      });
+
+      it("should support Enums", {
+        final x : Union<Float, Color> = Green;
+        x.type().should.equal(FloatOrColorType.Color(Green));
       });
     });
   }
