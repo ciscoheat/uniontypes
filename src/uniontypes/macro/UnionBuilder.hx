@@ -23,7 +23,7 @@ class UnionBuilder {
     ];
 
     static function toDotPath(t : {pack : Array<String>, module: String}, name : String) {
-        trace(t.pack.join('.') + "." + t.module + "." + name);
+        //trace(t.pack.join('.') + "." + t.module + "." + name);
         return MacroStringTools.toDotPath(
             t.pack.concat((t.module == name || t.module == '') ? [] : [t.module]), 
             name
@@ -32,13 +32,10 @@ class UnionBuilder {
 
     static public function build(checkUnknownType = false) {
         final curPos = Context.currentPos();
-        final localModule = Context.getLocalModule();
-        var localType : ClassType = null;
+        var localType = Context.getLocalClass().get();
 
         final unionTypes = switch Context.getLocalType() {
-            case TInst(t, params): 
-                localType = t.get();
-                params;
+            case TInst(t, params): params;
             case _: Context.error("Class expected", curPos);
         }
 
@@ -49,10 +46,9 @@ class UnionBuilder {
             case t: Context.error('Unsupported Union name type: $t', curPos);
         }].join('Or');
 
-        // The path is irrelevant since the type will be defined in the current module.
-        final unionFullName = toDotPath({pack: [], module: ''}, unionName);
-        if(createdUnions.exists(unionFullName)) {
-            return createdUnions[unionFullName];
+        final unionUniqueName = toDotPath({pack: [], module: Context.getLocalModule()}, unionName);
+        if(createdUnions.exists(unionUniqueName)) {
+            return createdUnions[unionUniqueName];
         }
 
         // Sort Int before Float to avoid casting issues
@@ -192,11 +188,11 @@ class UnionBuilder {
         }
 
         Context.defineType(unionType);
-        createdUnions.set(unionFullName, Context.toComplexType(Context.getType(unionFullName)));
+        createdUnions.set(unionUniqueName, TPath({pack: [], name: unionName}));
 
-        //trace(createdUnions[unionFullName]);
+        //trace(createdUnions[unionUniqueName]);
 
-        return createdUnions[unionFullName];
+        return createdUnions[unionUniqueName];
     }
 }
 #end
