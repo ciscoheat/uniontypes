@@ -1,9 +1,22 @@
-# Haxe project
+# Uniontypes
 
-This is an example Haxe project scaffolded by Visual Studio Code.
+For those libraries that return one thing *or* another. Similar to [Union types in Typescript](https://www.typescriptlang.org/docs/handbook/unions-and-intersections.html).
 
-Without further changes the structure is following:
+```haxe
+final x : Union<Int, String> = "A string";
 
- * `src/Main.hx`: Entry point Haxe source file
- * `build.hxml`: Haxe command line file used to build the project
- * `README.md`: This file
+switch x.type() {
+    case Int(i): trace('It was an Int: $i');
+    case String(s): trace('It was a String: ${s.toUpperCase()}');
+    case Null: trace('It was null');
+}
+```
+
+The `Union` type is for two types, but the library also includes `Union3`, `Union4`, `Union5` and `Union6` for more extreme cases.
+
+## To trust, or not to trust
+
+Depending on how much you trust the library, you can specify different unions:
+
+- `Union.TrustedUnion` assumes a value will never be `null`, meaning no `Null` enum constructor will exist.
+- `Union.UntrustedUnion` includes both a `Null` and an `Unknown(u : Dynamic)` enum constructor.
