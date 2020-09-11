@@ -24,9 +24,12 @@ class UnionBuilder {
         );
     }
 
-    static public function build(checkUnknownType = false) {
+    static public function build(checkNull = true, checkUnknownType = false) {
+        final checkNull = checkNull;
+        final checkUnknownType = checkUnknownType;
+
         final curPos = Context.currentPos();
-        var localType = Context.getLocalClass().get();
+        final localType = Context.getLocalClass().get();
 
         final unionTypes = switch Context.getLocalType() {
             case TInst(t, params): params;
@@ -72,6 +75,19 @@ class UnionBuilder {
                     })
                 }
 
+                final unknownField = {
+                    pos: curPos,
+                    name: 'Unknown',
+                    kind: FFun({
+                        ret: null,
+                        expr: null,
+                        args: [{
+                            type: macro : Dynamic,
+                            name: 'u'
+                        }]
+                    })
+                }
+
                 {
                     pos: curPos,
                     pack: localType.pack,
@@ -99,7 +115,9 @@ class UnionBuilder {
                                 }]
                             })
                         }
-                    }].concat([nullField])
+                    }]
+                    .concat(checkNull ? [nullField] : [])
+                    .concat(checkUnknownType ? [unknownField] : [])
                 }
             }
 
@@ -138,6 +156,10 @@ class UnionBuilder {
                     macro Std.isOfType(this, $p{typeToCheck}), 
                     {expr: enumValue, pos: curPos}, 
                     {expr: ifExpr(it), pos: curPos}
+                ) else if(checkUnknownType) EIf(
+                    macro Std.isOfType(this, $p{typeToCheck}), 
+                    {expr: enumValue, pos: curPos}, 
+                    {expr: (macro Unknown(cast this)).expr, pos: curPos}
                 ) else
                     enumValue;
             }
