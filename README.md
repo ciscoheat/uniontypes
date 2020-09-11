@@ -2,6 +2,12 @@
 
 For those libraries that return one thing *or* another. Similar to [Union types in Typescript](https://www.typescriptlang.org/docs/handbook/unions-and-intersections.html).
 
+## Installation
+
+`haxelib install uniontypes`
+
+## Usage
+
 ```haxe
 final x : Union<Int, String> = "A string";
 

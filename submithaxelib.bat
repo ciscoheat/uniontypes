@@ -1,5 +1,5 @@
 @echo off
-del uniontypes.zip >nul 2>&1
+del ..\uniontypes.zip >nul 2>&1
 
 zip -r ..\uniontypes.zip . -i src/* README.md haxelib.json
 cd ..
