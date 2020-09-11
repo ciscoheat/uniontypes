@@ -16,12 +16,6 @@ using haxe.macro.ExprTools;
 class UnionBuilder {
     static final createdUnions = new Map<String, ComplexType>();
 
-    static final nameTable = [
-        "Bool" => "Boolean",
-        "Float" => "Floating",
-        "Int" => "Integer"
-    ];
-
     static function toDotPath(t : {pack : Array<String>, module: String}, name : String) {
         //trace(t.pack.join('.') + "." + t.module + "." + name);
         return MacroStringTools.toDotPath(
@@ -86,11 +80,9 @@ class UnionBuilder {
                     fields: [for(t in unionTypes) {
                         final name = switch t {
                             case TInst(t, _):
-                                final inst = t.get();
-                                nameTable.exists(inst.name) ? nameTable[inst.name] : inst.name;
+                                t.get().name;
                             case TAbstract(t, _): 
-                                final inst = t.get();
-                                nameTable.exists(inst.name) ? nameTable[inst.name] : inst.name;
+                                t.get().name;
                             case _:
                                 Context.error('Unsupported Union enum type: $t', curPos);
                         }
@@ -123,11 +115,9 @@ class UnionBuilder {
                 final t : Type = it.next();
                 final enumValue = switch t {
                     case TInst(t, _):
-                        final inst = t.get();
-                        nameTable.exists(inst.name) ? nameTable[inst.name] : inst.name;
+                        t.get().name;
                     case TAbstract(t, _): 
-                        final inst = t.get();
-                        nameTable.exists(inst.name) ? nameTable[inst.name] : inst.name;
+                        t.get().name;
                     case _:
                         Context.error('Unsupported Union enum type: $t', curPos);
                 }

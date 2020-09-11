@@ -1,10 +1,10 @@
 enum UnionClassType {
 	Null;
 	String(s : String);
-	Integer(i : Int);
+	Int(i : Int);
 	Date(d : Date);
-	Boolean(b : Bool);
-    Floating(f : Float);
+	Bool(b : Bool);
+    Float(f : Float);
     //Unknown(d : Dynamic);
 }
 
@@ -16,12 +16,12 @@ abstract UnionClass(Dynamic) from String from Int from Date from Bool from Float
 			String(cast this)
 		else if(Std.isOfType(this, std.Date))
 			Date(cast this)
-		else if(Std.isOfType(this, Bool))
-			Boolean(cast this)
-		else if(Std.isOfType(this, Int))
-			Integer(cast this) // Must be before Floating!
+		else if(Std.isOfType(this, StdTypes.Bool))
+			Bool(cast this)
+		else if(Std.isOfType(this, StdTypes.Int))
+			Int(cast this) // Must be before Floating!
 		else //if(Std.isOfType(this, Float))
-            Floating(cast this);
+            Float(cast this);
         //else
         //    Unknown(this);
 	}
