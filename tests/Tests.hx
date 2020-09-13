@@ -142,6 +142,23 @@ class Tests extends buddy.SingleSuite {
         final x : Union.UntrustedUnion<Int, String> = cast unknown;
         x.type().should.equal(UntrustedIntOrStringType.Unknown(unknown));
       });
+
+      it("should be comparable with identity, even if in different packages", {
+        final x : Union<Float, Name> = "A name";
+        final y : Union<Float, Name> = "A name";
+        x.should.be(y);
+
+        final date = std.Date.now();
+        final x : Union<Int, Date> = date;
+        final y : Union<Int, Date> = date;
+        x.should.be(y);
+
+        final x : Union<String, Int> = 12345;
+        x.should.be(subpack.SubTest.comparer());
+        
+        final x : Union<subpack.SubTest.SubClass, Int> = 12345;
+        x.should.be(subpack.SubTest.comparer());
+      });
     });
   }
 }

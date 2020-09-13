@@ -16,12 +16,12 @@ using haxe.macro.ExprTools;
 class UnionBuilder {
     static final createdUnions = new Map<String, ComplexType>();
 
-    static function toDotPath(t : {pack : Array<String>, module: String}, name : String) {
-        //trace(t.pack.join('.') + "." + t.module + "." + name);
-        return MacroStringTools.toDotPath(
-            t.pack.concat((t.module == name || t.module == '') ? [] : [t.module]), 
-            name
-        );
+    static function toDotPath(t : {module: String}, name : String) {
+        final moduleName = t.module.split('.');
+        return if(moduleName[moduleName.length-1] == name)
+            t.module
+        else
+            t.module + '.' + name;
     }
 
     static function typeName(t : Type) return switch t {
@@ -47,10 +47,9 @@ class UnionBuilder {
         final unionName = (if(trusted == null) '' else (trusted ? 'Trusted' : 'Untrusted')) + 
             unionTypes.map(typeName).join('Or');
 
-        final unionUniqueName = toDotPath(
-            {pack: [], module: Context.getLocalModule()}, 
-            unionName
-        );
+        final unionUniqueName = unionName + "<" + [for(t in unionTypes) Std.string(t)].join(',') + ">";
+
+        //trace(unionUniqueName);
 
         // Check cache
         if(createdUnions.exists(unionUniqueName)) {
@@ -203,7 +202,7 @@ class UnionBuilder {
         }
 
         Context.defineType(unionType);
-        createdUnions.set(unionUniqueName, TPath({pack: [], name: unionName}));
+        createdUnions.set(unionUniqueName, TPath({pack: localClass.pack, name: unionName}));
 
         //trace(createdUnions[unionUniqueName]);
 
