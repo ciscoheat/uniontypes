@@ -15,6 +15,12 @@ enum Color {
   Green;
 }
 
+typedef AType = {
+  final name : String;
+  final email : String;
+  final ?score : Int;
+}
+
 class Tests extends buddy.SingleSuite {
   public function new() {
     describe("Uniontypes", {
@@ -41,20 +47,20 @@ class Tests extends buddy.SingleSuite {
 
       it("should work with the macro builder", {
         final x : Union3<String, Float, Int> = null;
-        x.type().should.equal(StringOrFloatOrIntType.Null);
+        x.type().should.equal(FloatOrIntOrStringType.Null);
 
         final x : Union3<String, Float, Int> = "string";
-        x.type().should.equal(StringOrFloatOrIntType.String("string"));
+        x.type().should.equal(FloatOrIntOrStringType.String("string"));
 
         final x : Union3<String, Float, Int> = 123;
-        x.type().should.equal(StringOrFloatOrIntType.Int(123));
+        x.type().should.equal(FloatOrIntOrStringType.Int(123));
 
         final x : Union3<String, Float, Int> = 123.45;
-        x.type().should.equal(StringOrFloatOrIntType.Float(123.45));
+        x.type().should.equal(FloatOrIntOrStringType.Float(123.45));
       });
 
       it("should work with switch statements", {
-        function testUnion(inp : StringOrFloatOrInt)
+        function testUnion(inp : FloatOrIntOrString)
           return switch inp.type() {
             case Null: false;
             case String(s): s == "test";
@@ -112,7 +118,7 @@ class Tests extends buddy.SingleSuite {
 
       it("should support Enums", {
         final x : Union<Float, Color> = Green;
-        x.type().should.equal(FloatOrColorType.Color(Green));
+        x.type().should.equal(ColorOrFloatType.Color(Green));
       });
 
       it("should have Trusted and Untrusted Unions in each module.", {
@@ -158,6 +164,30 @@ class Tests extends buddy.SingleSuite {
         
         final x : Union<subpack.SubTest.SubClass, Int> = 12345;
         x.should.be(subpack.SubTest.comparer());
+      });
+ 
+      it("should handle types in any order and anonymous structures", {
+        final aType : AType = {name: 'Bob', email: 'bob@example.com', score: 10};
+        final untrusted : Union.UntrustedUnion<SomeClass, AType> = aType;
+        final normal : Union<AType, SomeClass> = {name: 'Bob', email: 'no email', score: 0};
+        final reversed : Union<SomeClass, AType> = {name: 'Bob', email: 'still no email'};
+        
+        function test(a : Union.UntrustedUnion<SomeClass, AType>, b : Union<AType, SomeClass>) switch a.type() {
+          case AType(a): switch b.type() {
+            case AType(b): a.name.should.be(b.name);
+            case SomeClass(_): fail("No AType.");
+            case Null: fail("No AType.");
+          }
+          case SomeClass(_): fail("No AType.");
+          case Null: fail("No AType.");
+          case Unknown(u): u.name.should.be('Fail');
+        }
+
+        // Check if reversed unions unify
+        test(untrusted, reversed);
+
+        // Test Unknown with field missing
+        test(cast {name: 'Fail'}, normal);
       });
     });
   }

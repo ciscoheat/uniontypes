@@ -9,7 +9,7 @@
   "contributors": [
     "ciscoheat"
   ],
-  "releasenote": "Fixed namespace clashes.",
-  "version": "0.2.0",
+  "releasenote": "Support for (typedef'd) anonymous structures.",
+  "version": "0.3.0",
   "dependencies": {}
 }

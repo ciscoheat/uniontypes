@@ -1,7 +1,7 @@
 package uniontypes.macro;
 
 #if macro
-import haxe.macro.MacroStringTools;
+import haxe.macro.Expr;
 import haxe.macro.Expr.FieldType;
 import haxe.macro.Expr.ExprDef;
 import haxe.macro.Expr.Access;
@@ -24,12 +24,22 @@ class UnionBuilder {
             t.module + '.' + name;
     }
 
-    static function typeName(t : Type) return switch t {
-        case TInst(t, _): t.get().name;
-        case TAbstract(t, _): t.get().name;
-        case TType(t, _): t.get().name;
-        case TEnum(t, _): t.get().name;
-        case t: Context.error('Unsupported Union name type: $t', Context.currentPos());
+    static function typeName(t : Type) {
+        final name = switch t {
+            case TInst(t, _): t.get().name;
+            case TAbstract(t, _): t.get().name;
+            case TType(t, _): t.get().name;
+            case TEnum(t, _): t.get().name;
+            case TAnonymous(_):
+                Context.error(
+                    'Cannot use an anynomous type directly, name it with a typedef.', 
+                    Context.currentPos()
+                );
+            case t: 
+                Context.error('Unsupported Union type: $t', Context.currentPos());
+        }
+        //trace(name);
+        return name;
     }
 
     static public function build(trusted : Null<Bool> = null) {
@@ -44,21 +54,55 @@ class UnionBuilder {
             case _: Context.error("Class expected", curPos);
         }
 
+        // Sort types to make them commutative and to reduce type checking
+        // (anonymous types is a more time-consuming check)
+
+        function actualType(a : Type, followed = false) return switch a {
+            case TType(t, _): actualType(Context.followWithAbstracts(a));
+            case TAbstract(t, _) if(!followed): actualType(Context.followWithAbstracts(a), true);
+            case _: a;
+        }
+
+        function sortTypes(a : Type, b : Type) : Int {
+            return switch actualType(a) {
+                case TAnonymous(_): 
+                    switch actualType(b) {
+                        case TAnonymous(_): 
+                            // If both are anonymous, just compare names.
+                            typeName(a) > typeName(b) ? 1 : -1;
+                        case _:
+                            1;
+                    }
+                case _: switch actualType(b) {
+                    case TAnonymous(_): 
+                        -1;
+                    case _:
+                        typeName(a) > typeName(b) ? 1 : -1;
+                }
+            }
+        }
+
+        unionTypes.sort(sortTypes);
+
         final unionName = (if(trusted == null) '' else (trusted ? 'Trusted' : 'Untrusted')) + 
             unionTypes.map(typeName).join('Or');
 
-        final unionUniqueName = unionName + "<" + [for(t in unionTypes) Std.string(t)].join(',') + ">";
+        final sortedUnionTypes = [for(t in unionTypes) Std.string(t)];
+        sortedUnionTypes.sort((a, b) -> a > b ? 1 : -1);
 
+        final unionUniqueName = unionName + "<" + sortedUnionTypes.join(',') + ">";
+        
         //trace(unionUniqueName);
 
         // Check cache
         if(createdUnions.exists(unionUniqueName)) {
+            //trace("===== Found above type in cache =====");
             return createdUnions[unionUniqueName];
         }
 
         // Sort Int before Float to avoid casting issues
         {
-            final float = unionTypes.find(f -> switch f {
+            final float = unionTypes.find(f -> switch actualType(f) {
                 case TAbstract(t, _) if(t.get().name == "Float"): true;
                 case _: false;
             });
@@ -133,29 +177,46 @@ class UnionBuilder {
                 final t : Type = it.next();
                 final enumValue = ECall(macro $p{[unionEnumName, typeName(t)]}, [macro cast this]);
 
-                final typeToCheck = (switch t {
+                //trace('== $t');
+
+                function generateIf(t, followed = false) : Expr return switch t {
                     case TInst(t, _):
                         final inst = t.get();
-                        toDotPath(inst, inst.name);
+                        final typeToCheck = toDotPath(inst, inst.name);
+                        macro Std.isOfType(this, $p{typeToCheck.split('.')});
                     case TAbstract(t, _): 
                         final inst = t.get();
-                        toDotPath(inst, inst.name);    
+                        if(followed) {
+                            final typeToCheck = toDotPath(inst, inst.name);
+                            macro Std.isOfType(this, $p{typeToCheck.split('.')});
+                        } else {
+                            generateIf(Context.followWithAbstracts(inst.type), true);
+                        }                            
                     case TType(t, _): 
-                        final inst = t.get();
-                        toDotPath(inst, inst.name);
+                        generateIf(Context.followWithAbstracts(t.get().type));
                     case TEnum(t, _): 
                         final inst = t.get();
-                        toDotPath(inst, inst.name);            
+                        final typeToCheck = toDotPath(inst, inst.name);
+                        macro Std.isOfType(this, $p{typeToCheck.split('.')});
+                    case TAnonymous(a):
+                        // Check all non-optional fields
+                        final fields = a.get().fields.filter(f -> !f.meta.has(":optional")).map(f -> {
+                            expr: EConst(CString(f.name)), pos: curPos
+                        });
+                        macro Type.typeof(this).equals(TObject) && 
+                            !Lambda.exists($a{fields}, f -> !Reflect.hasField(this, f));
                     case _:
                         Context.error('Unsupported Union type: $t', curPos);
-                }).split('.');
+                }
+
+                final ifExpression = generateIf(t);
 
                 return if(it.hasNext()) EIf(
-                    macro Std.isOfType(this, $p{typeToCheck}), 
+                    ifExpression, 
                     {expr: enumValue, pos: curPos}, 
                     {expr: ifExpr(it), pos: curPos}
                 ) else if(checkUnknownType) EIf(
-                    macro Std.isOfType(this, $p{typeToCheck}), 
+                    ifExpression,
                     {expr: enumValue, pos: curPos}, 
                     {expr: (macro Unknown(cast this)).expr, pos: curPos}
                 ) else
@@ -186,7 +247,7 @@ class UnionBuilder {
                 })
             }
 
-            //trace({expr: ifExpr, pos: curPos}.toString());
+            //trace({expr: ifExpr, pos: curPos}.toString());            
 
             {
                 pos: curPos,
