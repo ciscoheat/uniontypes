@@ -21,6 +21,15 @@ typedef AType = {
   final ?score : Int;
 }
 
+interface Enjoyable {
+  public function smile() : String;
+}
+
+class Life implements Enjoyable {
+  public function new() {}
+  public function smile() return "Worthwhile";
+}
+
 class Tests extends buddy.SingleSuite {
   public function new() {
     describe("Uniontypes", {
@@ -119,6 +128,15 @@ class Tests extends buddy.SingleSuite {
       it("should support Enums", {
         final x : Union<Float, Color> = Green;
         x.type().should.equal(ColorOrFloatType.Color(Green));
+      });
+
+      it("should support Interfaces", {
+        final x : Union<Int, Enjoyable> = new Life();
+        switch x.type() {
+          case Null: fail('x was null');
+          case Int(i): fail('x was Int $i');
+          case Enjoyable(e): e.smile().should.be("Worthwhile");
+        }        
       });
 
       it("should have Trusted and Untrusted Unions in each module.", {
