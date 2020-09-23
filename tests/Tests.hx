@@ -30,6 +30,18 @@ class Life implements Enjoyable {
   public function smile() return "Worthwhile";
 }
 
+@:publicFields @:structInit class User {
+  final name : String;
+  final score : Int;
+
+  public function new(name, score) {
+    this.name = name;
+    this.score = score;
+  }
+}
+
+typedef UserUnion = Union<String, User>;
+
 class Tests extends buddy.SingleSuite {
   public function new() {
     describe("Uniontypes", {
@@ -206,6 +218,25 @@ class Tests extends buddy.SingleSuite {
 
         // Test Unknown with field missing
         test(cast {name: 'Fail'}, normal);
+      });
+
+      it("should work with :structInit", {      
+        function test(x : UserUnion) switch x.type() {
+          case Null: fail('x was null');
+          case String(s): s.should.be("String");
+          case User(u): 
+            u.should.beType(User);
+            u.name.should.be("Bob");
+        }
+
+        final x : Union<String, User> = {name: "Bob", score: 100};
+        test(x);
+
+        final x : UserUnion = new User("Bob", 100);
+        test(x);
+
+        final x : UserUnion = "String";
+        test(x);
       });
     });
   }
